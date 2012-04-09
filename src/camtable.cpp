@@ -89,6 +89,13 @@ bool MacAddress::operator<(const MacAddress &second) const
 {
     for (int i=0; i < ETH_ALEN; i++) {
         if (this->mac[i] < second.mac[i]) {
+/*            printf("LISI SE: %02x%02x.%02x%02x.%02x%02x | ", this->mac[0], this->mac[1],
+                                                 this->mac[2], this->mac[3],
+                                                 this->mac[4], this->mac[5]);
+            printf("%02x%02x.%02x%02x.%02x%02x\n", second.mac[0], second.mac[1],
+                                                 second.mac[2], second.mac[3],
+                                                 second.mac[4], second.mac[5]);
+*/
             return true;
         }
     }
@@ -141,14 +148,23 @@ CamTable::~CamTable()
 }
 
 
+
+void CamTable::set_ports(vector<Port*> ports)
+{
+    this->ports = ports;
+}
+
+
+
 int CamTable::update(MacAddress &mac, Port *port)
 {
     int ret;
-    RecordTable::iterator it;
+//    RecordTable::iterator it;
     pthread_mutex_lock(&(this->mutex));
-    it = this->records.find(mac);
+//    it = this->records.find(mac);
 
-    if (it == this->records.end()) {
+//    if (it == this->records.end()) {
+    if (! this->records.count(mac)) {
         // Unknown source mac address -> Create record
         printf("Pridavam novy zaznam: %s\n", mac.str().c_str());
         CamRecord *camrecord = new CamRecord(mac, port);
@@ -156,7 +172,7 @@ int CamTable::update(MacAddress &mac, Port *port)
         ret = 1;
     } else {
         printf("uz existuje: %s\n", mac.str().c_str());
-        it->second->refresh();
+//        it->second->refresh();
         ret = 0;
     }
 
@@ -167,17 +183,41 @@ int CamTable::update(MacAddress &mac, Port *port)
 
 void CamTable::print_table()
 {
-    RecordTable::iterator it;
+    RecordTableIterator it, it2;
     time_t cur_time = time(NULL);
 
     printf("MAC address      Port  Age\n");
-    
+
     pthread_mutex_lock(&(this->mutex));
+    printf("SIZE: %d\n", this->records.size());
     for (it=this->records.begin(); it != this->records.end(); it++) {
+        printf("iterace\n");
         CamRecord *rec = it->second;
         string mac_str = rec->mac.str();
         printf("%-16s %-5s %ld\n", mac_str.c_str(), rec->port->name.c_str(), (cur_time - rec->last_used));
+        int x = 0;
+        for (it2=this->records.begin(); it2 != this->records.end(); it2++) {
+            if (it == it2) {
+                continue;
+            }
+            MacAddress m1 = (MacAddress) it->first;
+            MacAddress m2 = (MacAddress) it2->first;
+            if (m1 == m2) {
+                printf("JSOU STEJNE!!!\n");
+                if (! (m1 < m2)) {
+                    printf("OK\n");
+                }
+            }
+        }
     }
+
+
+    RecordTable::reverse_iterator rit;
+    for (rit = this->records.rbegin(); rit != this->records.rend(); rit++) {
+        printf("##\n");
+    }
+
+
     pthread_mutex_unlock(&(this->mutex));
 }
 
@@ -198,10 +238,10 @@ CamRecord *CamTable::get_record(MacAddress &mac)
 
 void CamTable::broadcast(Port *source_port, const void *buf, size_t size)
 {
-    for (unsigned int i=0; i < ports.size(); i++) {
-        if (ports[i] != source_port) {
-            ports[i]->send(buf, size);
-            printf("Broadcasted from: %s\n", ports[i]->name.c_str());
+    for (unsigned int i=0; i < this->ports.size(); i++) {
+        if (this->ports[i] != source_port) {
+            this->ports[i]->send(buf, size);
+            printf("Broadcast from: %s\n", this->ports[i]->name.c_str());
         }
     }
 }

@@ -44,6 +44,7 @@ class CamRecord {
 
 
 typedef std::map<MacAddress, CamRecord*> RecordTable;
+typedef std::map<MacAddress, CamRecord*>::iterator RecordTableIterator;
 
 
 class CamTable {
@@ -55,6 +56,7 @@ class CamTable {
     public:
         CamTable();
         ~CamTable();
+        void set_ports(vector<Port*> ports);
         int update(MacAddress &mac, Port *port); // if doesn't exist -> add new record if exists -> refresh last_used
         void purge(); // TODO remove thread
         CamRecord *get_record(MacAddress &mac);

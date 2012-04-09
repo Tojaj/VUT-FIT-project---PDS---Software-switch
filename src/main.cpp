@@ -69,6 +69,7 @@ int main(int argc, char **argv) {
         next = next->next;
     }
 
+    camtable.set_ports(ports);
     printf("HERE\n");
 
     // Switch command line interface
