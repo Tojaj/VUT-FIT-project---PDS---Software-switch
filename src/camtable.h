@@ -43,9 +43,10 @@ class CamRecord {
 };
 
 
-typedef std::map<MacAddress, CamRecord*> RecordTable;
-typedef std::map<MacAddress, CamRecord*>::iterator RecordTableIterator;
-
+//typedef std::map<MacAddress, CamRecord*> RecordTable;
+//typedef std::map<MacAddress, CamRecord*>::iterator RecordTableIterator;
+typedef std::map<string, CamRecord*> RecordTable;
+typedef std::map<string, CamRecord*>::iterator RecordTableIterator;
 
 class CamTable {
     private:

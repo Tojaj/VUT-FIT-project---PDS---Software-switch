@@ -161,14 +161,14 @@ int CamTable::update(MacAddress &mac, Port *port)
     int ret;
 //    RecordTable::iterator it;
     pthread_mutex_lock(&(this->mutex));
-//    it = this->records.find(mac);
+//    it = this->records.find(mac.str());
 
 //    if (it == this->records.end()) {
-    if (! this->records.count(mac)) {
+    if (! this->records.count(mac.str())) {
         // Unknown source mac address -> Create record
         printf("Pridavam novy zaznam: %s\n", mac.str().c_str());
         CamRecord *camrecord = new CamRecord(mac, port);
-        this->records[mac] = camrecord;
+        this->records[mac.str()] = camrecord;
         ret = 1;
     } else {
         printf("uz existuje: %s\n", mac.str().c_str());
@@ -200,7 +200,7 @@ void CamTable::print_table()
             if (it == it2) {
                 continue;
             }
-            MacAddress m1 = (MacAddress) it->first;
+/*            MacAddress m1 = (MacAddress) it->first;
             MacAddress m2 = (MacAddress) it2->first;
             if (m1 == m2) {
                 printf("JSOU STEJNE!!!\n");
@@ -208,6 +208,7 @@ void CamTable::print_table()
                     printf("OK\n");
                 }
             }
+            */
         }
     }
 
@@ -227,7 +228,7 @@ CamRecord *CamTable::get_record(MacAddress &mac)
     CamRecord * ret = NULL;
     RecordTable::iterator it;
     pthread_mutex_lock(&(this->mutex));
-    it = this->records.find(mac);
+    it = this->records.find(mac.str());
     if (! (it == this->records.end())) {
         ret = it->second;
     }
