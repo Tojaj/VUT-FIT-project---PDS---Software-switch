@@ -5,6 +5,8 @@
 #include <string.h>
 #include "port.h"
 #include "port_thread.h"
+#include "camtable.h"
+#include "igmp.h"
 
 using namespace std;
 
@@ -25,6 +27,7 @@ int main(int argc, char **argv) {
     // Create port object and thread for every interface
 
     CamTable camtable;
+    IgmpTable igmptable;
     vector<pthread_t*> threads;
     vector<Port*> ports;
     vector<PortThreadData*> thread_data_table;
@@ -55,6 +58,7 @@ int main(int argc, char **argv) {
         
         tdata->port = port;
         tdata->camtable = &camtable;
+        tdata->igmptable = &igmptable;
         
         // Create new thread
         pthread_t *thread = new pthread_t;
@@ -68,7 +72,7 @@ int main(int argc, char **argv) {
         
         next = next->next;
     }
-
+    igmptable.set_ports(ports);
     camtable.set_ports(ports);
     printf("HERE\n");
 

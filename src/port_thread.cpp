@@ -2,6 +2,7 @@
 #include <linux/if_ether.h>
 #include "port_thread.h"
 #include "camtable.h"
+#include "igmp.h"
 
 
 void handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
@@ -27,8 +28,11 @@ void handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packe
     } else if (dest_mac.is_multicast()) {
         // Multicast - Send out via right port
         printf("Multicast (%s)\n", dest_mac.str().c_str());
-        // TODO
-
+        if (tdata->igmptable->process_multicast_packet(tdata->port, packet, header->caplen) == MULT_BROADCAST) {
+            // Send packet via all interfaces except the incoming interface
+            tdata->camtable->broadcast(tdata->port, packet, header->caplen);
+        }
+        
     } else {
         // Unicast - Send packet out via right port
         CamRecord *rec;

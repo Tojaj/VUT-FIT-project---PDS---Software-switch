@@ -3,11 +3,13 @@
 
 #include "port.h"
 #include "camtable.h"
+#include "igmp.h"
 
 
 class PortThreadData {
     public:
         CamTable *camtable;
+        IgmpTable *igmptable;
         Port *port;
 };
 

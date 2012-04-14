@@ -159,12 +159,11 @@ void CamTable::set_ports(vector<Port*> ports)
 int CamTable::update(MacAddress &mac, Port *port)
 {
     int ret;
-//    RecordTable::iterator it;
+    RecordTable::iterator it;
     pthread_mutex_lock(&(this->mutex));
-//    it = this->records.find(mac.str());
+    it = this->records.find(mac.str());
 
-//    if (it == this->records.end()) {
-    if (! this->records.count(mac.str())) {
+    if (it == this->records.end()) {
         // Unknown source mac address -> Create record
         printf("Pridavam novy zaznam: %s\n", mac.str().c_str());
         CamRecord *camrecord = new CamRecord(mac, port);
@@ -172,7 +171,7 @@ int CamTable::update(MacAddress &mac, Port *port)
         ret = 1;
     } else {
         printf("uz existuje: %s\n", mac.str().c_str());
-//        it->second->refresh();
+        it->second->refresh();
         ret = 0;
     }
 
@@ -195,20 +194,10 @@ void CamTable::print_table()
         CamRecord *rec = it->second;
         string mac_str = rec->mac.str();
         printf("%-16s %-5s %ld\n", mac_str.c_str(), rec->port->name.c_str(), (cur_time - rec->last_used));
-        int x = 0;
         for (it2=this->records.begin(); it2 != this->records.end(); it2++) {
             if (it == it2) {
                 continue;
             }
-/*            MacAddress m1 = (MacAddress) it->first;
-            MacAddress m2 = (MacAddress) it2->first;
-            if (m1 == m2) {
-                printf("JSOU STEJNE!!!\n");
-                if (! (m1 < m2)) {
-                    printf("OK\n");
-                }
-            }
-            */
         }
     }
 
@@ -242,7 +231,7 @@ void CamTable::broadcast(Port *source_port, const void *buf, size_t size)
     for (unsigned int i=0; i < this->ports.size(); i++) {
         if (this->ports[i] != source_port) {
             this->ports[i]->send(buf, size);
-            printf("Broadcast from: %s\n", this->ports[i]->name.c_str());
+            printf("Broadcast from: %s to: %s\n", source_port->name.c_str(), this->ports[i]->name.c_str());
         }
     }
 }
