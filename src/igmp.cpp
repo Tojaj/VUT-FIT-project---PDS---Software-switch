@@ -169,23 +169,22 @@ string IgmpTable::print_ip(int ip)
 
 int IgmpTable::process_igmp_packet(Port *source_port, const u_char *packet, size_t size, struct igmphdr *igmp_hdr)
 {
-    printf("IGMP type: %02x (%02x)\n", ntohs(igmp_hdr->type), igmp_hdr->type);
     // Membership query
-    if (ntohs(igmp_hdr->type) == IGMP_HOST_MEMBERSHIP_QUERY) {
+    if (igmp_hdr->type == IGMP_HOST_MEMBERSHIP_QUERY) {
         printf("Membership query: %s od %s\n", print_ip(ntohs(igmp_hdr->group)).c_str(), source_port->name.c_str());
         add_group(ntohs(igmp_hdr->group), source_port);
         return MULT_BROADCAST;
     }
 
     // Membership report
-    if (ntohs(igmp_hdr->type) == IGMPV2_HOST_MEMBERSHIP_REPORT || ntohs(igmp_hdr->type) == IGMPV3_HOST_MEMBERSHIP_REPORT) {
+    if (igmp_hdr->type == IGMPV2_HOST_MEMBERSHIP_REPORT || igmp_hdr->type == IGMPV3_HOST_MEMBERSHIP_REPORT) {
         printf("Membership report: %s od %s\n", print_ip(ntohs(igmp_hdr->group)).c_str(), source_port->name.c_str());
         add_group_member(ntohs(igmp_hdr->group), source_port);
         return send_to_querier(ntohs(igmp_hdr->group), packet, size);
     }
 
     // Membership leave group
-    if (ntohs(igmp_hdr->type) == IGMP_HOST_LEAVE_MESSAGE) {
+    if (igmp_hdr->type == IGMP_HOST_LEAVE_MESSAGE) {
         printf("Membership leave group: %s od %s\n", print_ip(ntohs(igmp_hdr->group)).c_str(), source_port->name.c_str());
         remove_group_member(ntohs(igmp_hdr->group), source_port);
         return send_to_querier(ntohs(igmp_hdr->group), packet, size);
