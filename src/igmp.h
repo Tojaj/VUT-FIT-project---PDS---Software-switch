@@ -20,7 +20,7 @@ class IgmpRecord {
 };
 
 
-typedef map<__be32, IgmpRecord> IgmpRecordTable;
+typedef map<__be32, IgmpRecord*> IgmpRecordTable;
 
 
 class IgmpTable {

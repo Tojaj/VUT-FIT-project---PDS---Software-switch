@@ -38,11 +38,11 @@ void IgmpTable::add_group(__be32 group_id, Port *port)
 
     pthread_mutex_lock(&(this->mutex));
     if(!this->records.count(group_id)) {
-        IgmpRecord rec;
-        rec.group_id = group_id;
-        rec.igmp_querier = port;
+        IgmpRecord *irc = new IgmpRecord;
+        irc->group_id = group_id;
+        irc->igmp_querier = port;
         
-        this->records[group_id] = rec;
+        this->records[group_id] = irc;
     }
     pthread_mutex_unlock(&(this->mutex));
 }
@@ -64,11 +64,12 @@ void IgmpTable::add_group_member(__be32 group_id, Port *port)
         return;
     }
     
-    printf("Pridavam clena %s do multicastove skupiny %s neexistuje!\n", port->name.c_str(), print_ip(group_id).c_str());
+    printf("Pridavam clena %s do multicastove skupiny %s\n", port->name.c_str(), print_ip(group_id).c_str());
     
-    ((IgmpRecord) it->second).ports.push_back(port);
+    IgmpRecord *irc = (IgmpRecord *) it->second;
+    irc->ports.push_back(port);
     
-    printf("Delka vektoru portu v teto skupine: %d\n", ((IgmpRecord) it->second).ports.size());
+    printf("Delka vektoru portu v teto skupine: %d\n", irc->ports.size());
 
     pthread_mutex_unlock(&(this->mutex));
     return;
@@ -91,11 +92,11 @@ void IgmpTable::remove_group_member(__be32 group_id, Port *port)
         return;
     }
 
-    IgmpRecord rec = (IgmpRecord) it->second;
-    for (unsigned int i=0; i < ((IgmpRecord) it->second).ports.size(); i++) {
-        if (((IgmpRecord) it->second).ports[i] == port) {
-            printf("Odebiram port: %s\n", ((IgmpRecord) it->second).ports[i]->name.c_str());
-            ((IgmpRecord) it->second).ports.erase(((IgmpRecord) it->second).ports.begin() + i);
+    IgmpRecord *irc = (IgmpRecord *) it->second;
+    for (unsigned int i=0; i < irc->ports.size(); i++) {
+        if (irc->ports[i] == port) {
+            printf("Odebiram port: %s\n", irc->ports[i]->name.c_str());
+            irc->ports.erase(irc->ports.begin() + i);
             break;
         }
     }
@@ -121,10 +122,10 @@ int IgmpTable::send_to_group(__be32 group_id,  const u_char *packet, size_t size
         return MULT_BROADCAST;
     }
     
-    IgmpRecord rec = (IgmpRecord) it->second;
-    for (unsigned int i=0; i < rec.ports.size(); i++) {
-        rec.ports[i]->send(packet, size);
-        printf("Multicast to: %s\n", this->ports[i]->name.c_str());
+    IgmpRecord *irc = (IgmpRecord *) it->second;
+    for (unsigned int i=0; i < irc->ports.size(); i++) {
+        irc->ports[i]->send(packet, size);
+        printf("Multicast to: %s\n", irc->ports[i]->name.c_str());
     }
 
     pthread_mutex_unlock(&(this->mutex));
@@ -148,8 +149,8 @@ int IgmpTable::send_to_querier(__be32 group_id,  const u_char *packet, size_t si
         return MULT_BROADCAST;
     }
     
-    IgmpRecord rec = (IgmpRecord) it->second;
-    rec.igmp_querier->send(packet, size);
+    IgmpRecord *irc = (IgmpRecord *) it->second;
+    irc->igmp_querier->send(packet, size);
 
     pthread_mutex_unlock(&(this->mutex));
     return MULT_OK;
@@ -282,17 +283,16 @@ int IgmpTable::process_multicast_packet(Port *source_port, const u_char *packet,
 void IgmpTable::print_table()
 {
     IgmpRecordTable::iterator it;
-
     printf("GroupAddr\tIfaces\n");
 
     pthread_mutex_lock(&(this->mutex));
 
     for (it=this->records.begin(); it != this->records.end(); it++) {
-        IgmpRecord rec = (IgmpRecord) it->second;
-        printf("Pocet portu ve skupine: %d\n", rec.ports.size());
-        printf("%s*%s", print_ip(rec.group_id).c_str(), rec.igmp_querier->name.c_str());
-        for (size_t i=0; i < rec.ports.size();) {
-            printf(", %s", rec.ports[i]->name.c_str());
+        IgmpRecord *irc = (IgmpRecord *) it->second;
+        printf("Pocet portu ve skupine: %d\n", irc->ports.size());
+        printf("%s*%s", print_ip(irc->group_id).c_str(), irc->igmp_querier->name.c_str());
+        for (size_t i=0; i < irc->ports.size();) {
+            printf(", %s", irc->ports[i]->name.c_str());
             i++;
         }
         printf("\n");
