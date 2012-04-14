@@ -211,7 +211,7 @@ int IgmpTable::process_multicast_packet(Port *source_port, const void *packet, s
     }
 
     if (eth_hdr->h_proto != ETH_P_IP) {
-        printf(">>>> Multicast packet ale ne IP\n");
+        printf(">>>> Multicast packet ale ne IP (%d)\n", eth_hdr->h_proto);
         return MULT_BROADCAST;
     }
 
