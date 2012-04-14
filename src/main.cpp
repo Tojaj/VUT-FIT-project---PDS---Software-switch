@@ -10,6 +10,10 @@
 
 using namespace std;
 
+/*
+TODO:
+- Mazani CAM
+*/
 
 int main(int argc, char **argv) {
     int ret;
@@ -79,11 +83,30 @@ int main(int argc, char **argv) {
     // Switch command line interface
     // TODO
     puts("Switch is running");
-    while (getc(stdin) != 'x') {
-        camtable.print_table();
-        //camtable.purge();
-        //camtable.print_table();
-        //printf("#################\n");
+    while (1) {
+        char cmd[31];
+        printf("switch> ");
+        fflush(stdout);
+        if (!scanf("%30s", cmd)) {
+            continue;
+        }
+        
+        if (!strcmp(cmd, "quit")) {
+            break;
+        } else if (!strcmp(cmd, "cam")) {
+            camtable.print_table();
+        } else if (!strcmp(cmd, "stat")) {
+            printf("Iface\tSent-B\tSent-frm\tRecv-B\tRecv-frm\n");
+            for (size_t i=0; i < ports.size(); i++) {
+                ports[i]->print_stat();
+            }
+        } else if (!strcmp(cmd, "igmp")) {
+            igmptable.print_table();
+        } else if (!strcmp(cmd, "help")) {
+            printf("Supported commands are: quit, cam, stat, igmp, help\n");
+        } else {
+            printf("Unknown command \"%s\"\n", cmd);
+        }
     }
     
 

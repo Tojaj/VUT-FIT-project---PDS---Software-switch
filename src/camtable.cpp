@@ -182,31 +182,17 @@ int CamTable::update(MacAddress &mac, Port *port)
 
 void CamTable::print_table()
 {
-    RecordTableIterator it, it2;
+    RecordTableIterator it;
     time_t cur_time = time(NULL);
 
-    printf("MAC address      Port  Age\n");
+    printf("MAC address\tPort\tAge\n");
 
     pthread_mutex_lock(&(this->mutex));
-    printf("SIZE: %d\n", this->records.size());
     for (it=this->records.begin(); it != this->records.end(); it++) {
-        printf("iterace\n");
         CamRecord *rec = it->second;
         string mac_str = rec->mac.str();
-        printf("%-16s %-5s %ld\n", mac_str.c_str(), rec->port->name.c_str(), (cur_time - rec->last_used));
-        for (it2=this->records.begin(); it2 != this->records.end(); it2++) {
-            if (it == it2) {
-                continue;
-            }
-        }
+        printf("%s\t%s\t%ld\n", mac_str.c_str(), rec->port->name.c_str(), (cur_time - rec->last_used));
     }
-
-
-    RecordTable::reverse_iterator rit;
-    for (rit = this->records.rbegin(); rit != this->records.rend(); rit++) {
-        printf("##\n");
-    }
-
 
     pthread_mutex_unlock(&(this->mutex));
 }

@@ -33,6 +33,7 @@ class IgmpTable {
 
     public:
         IgmpTable();
+        ~IgmpTable();
         void add_group(__be32 group_id, Port *port);
         void add_group_member(__be32 group_id, Port *port);
         void remove_group_member(__be32 group_id, Port *port);
@@ -43,6 +44,7 @@ class IgmpTable {
         string print_ip(int ip);
         int process_multicast_packet(Port *source_port, const void *buf, size_t size);
         void multicast(Port *source_port, const void *buf, size_t size);  // Send multicast
+        void print_table();
 };
 
 #endif /* __SWITCH_IGMP_H__ */

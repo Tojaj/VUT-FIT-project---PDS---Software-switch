@@ -12,7 +12,13 @@
 
 IgmpTable::IgmpTable()
 {
-    ;
+    pthread_mutex_init(&(this->mutex), NULL);
+}
+
+
+IgmpTable::~IgmpTable()
+{
+    pthread_mutex_destroy(&(this->mutex));
 }
 
 
@@ -154,7 +160,7 @@ string IgmpTable::print_ip(int ip)
     bytes[3] = (ip >> 24) & 0xFF;        
     
     char buffer[16];
-    snprintf(buffer, 16, "%02d.%02d.%02d.%02d", bytes[3], bytes[2], bytes[1], bytes[0]);
+    snprintf(buffer, 16, "%3d.%3d.%3d.%3d", bytes[3], bytes[2], bytes[1], bytes[0]);
     return string(buffer);
 }
 
@@ -249,5 +255,30 @@ int IgmpTable::process_multicast_packet(Port *source_port, const void *packet, s
     }
     
     return send_to_group(ip_hdr->daddr, packet, size);
+}
+
+
+void IgmpTable::print_table()
+{
+    IgmpRecordTable::iterator it;
+
+    printf("GroupAddr\tIfaces\n");
+
+    pthread_mutex_lock(&(this->mutex));
+
+    for (it=this->records.begin(); it != this->records.end(); it++) {
+        IgmpRecord rec = (IgmpRecord) it->second;
+        printf("%s*", print_ip(rec.group_id).c_str());
+        for (size_t i=0; i < rec.ports.size();) {
+            printf("%s", rec.ports[i]->name.c_str());
+            i++;
+            if (i < rec.ports.size())
+                printf(", ");
+            else
+                printf("\n");
+        }
+    }
+
+    pthread_mutex_unlock(&(this->mutex));
 }
 

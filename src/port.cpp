@@ -67,7 +67,7 @@ int Port::send(const void *buf, size_t size)
 
 void Port::print_stat()
 {
-    printf("%-6s %-9d %-9d %-9d %-9d\n", this->name.c_str(), this->send_b, this->send_f, this->recv_b, this->recv_f);
+    printf("%s\t%d\t%d\t%d\t%d\n", this->name.c_str(), this->send_b, this->send_f, this->recv_b, this->recv_f);
 }
 
 
