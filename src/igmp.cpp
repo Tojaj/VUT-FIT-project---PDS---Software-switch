@@ -4,6 +4,7 @@
 #include <linux/if_ether.h>
 #include <linux/ip.h>
 #include <linux/igmp.h>
+#include <arpa/inet.h>
 #include "igmp.h"
 #include "camtable.h"
 
@@ -210,7 +211,7 @@ int IgmpTable::process_multicast_packet(Port *source_port, const u_char *packet,
         // Bad packet
         return MULT_ERR;
     }
-
+/*
     MacAddress dst_mac(eth_hdr->h_dest);
     printf(">>>> Paket na adresu: %s\n", dst_mac.str().c_str());
 
@@ -222,13 +223,13 @@ int IgmpTable::process_multicast_packet(Port *source_port, const u_char *packet,
         }
         printf("\n");
     }
-
-    if (eth_hdr->h_proto != ETH_P_IP) {
-        printf(">>>> Multicast packet ale ne IP (%d)\n", eth_hdr->h_proto);
+*/
+    if (ntohs(eth_hdr->h_proto) != ETH_P_IP) {
+        printf(">>>> Multicast packet ale ne IP (%d)\n", ntohs(eth_hdr->h_proto));
         return MULT_BROADCAST;
     }
 
-    ip_hdr    = (struct iphdr *)  packet + sizeof(struct ethhdr);
+    ip_hdr    = (struct iphdr *)  (packet + sizeof(struct ethhdr));
 
     if ((eth_hdr_len + sizeof(struct iphdr)) > size) {
         // Bad packet
@@ -248,7 +249,7 @@ int IgmpTable::process_multicast_packet(Port *source_port, const u_char *packet,
     // IGMP packet
 
     if (ip_hdr->protocol == IGMP_PROTOCOL) {
-        igmp_hdr  = (struct igmphdr *) packet + eth_hdr_len + ip_hdr_len;
+        igmp_hdr  = (struct igmphdr *) (packet + eth_hdr_len + ip_hdr_len);
         igmp_hdr_len = sizeof(struct igmphdr);
         
         if ((eth_hdr_len + ip_hdr_len + igmp_hdr_len) > size) {
