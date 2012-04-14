@@ -214,6 +214,15 @@ int IgmpTable::process_multicast_packet(Port *source_port, const u_char *packet,
     MacAddress dst_mac(eth_hdr->h_dest);
     printf(">>>> Paket na adresu: %s\n", dst_mac.str().c_str());
 
+    size_t ii = 0;
+    while (ii < size) {
+        for (size_t xx=0; (xx < 16 && ii < size); xx++) {
+            printf("%2x ", packet[ii+xx]);
+            ii++;
+        }
+        printf("\n");
+    }
+
     if (eth_hdr->h_proto != ETH_P_IP) {
         printf(">>>> Multicast packet ale ne IP (%d)\n", eth_hdr->h_proto);
         return MULT_BROADCAST;
