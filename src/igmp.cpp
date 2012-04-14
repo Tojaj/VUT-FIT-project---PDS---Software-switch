@@ -282,15 +282,12 @@ void IgmpTable::print_table()
 
     for (it=this->records.begin(); it != this->records.end(); it++) {
         IgmpRecord rec = (IgmpRecord) it->second;
-        printf("%s*", print_ip(rec.group_id).c_str());
+        printf("%s*%s", print_ip(rec.group_id).c_str(), rec.igmp_querier->name.c_str());
         for (size_t i=0; i < rec.ports.size();) {
-            printf("%s", rec.ports[i]->name.c_str());
+            printf(", %s", rec.ports[i]->name.c_str());
             i++;
-            if (i < rec.ports.size())
-                printf(", ");
-            else
-                printf("\n");
         }
+        printf("\n");
     }
 
     pthread_mutex_unlock(&(this->mutex));
