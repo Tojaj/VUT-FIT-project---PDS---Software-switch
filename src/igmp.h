@@ -28,7 +28,7 @@ class IgmpTable {
         pthread_mutex_t mutex;
         IgmpRecordTable records;
         vector<Port*> ports;
-        int process_igmp_packet(Port *source_port, const void *packet, 
+        int process_igmp_packet(Port *source_port, const u_char *packet, 
                            size_t size, struct igmphdr *igmp_hdr);
 
     public:
@@ -37,13 +37,13 @@ class IgmpTable {
         void add_group(__be32 group_id, Port *port);
         void add_group_member(__be32 group_id, Port *port);
         void remove_group_member(__be32 group_id, Port *port);
-        int send_to_group(__be32 group_id,  const void *packet, size_t size);
-        int send_to_querier(__be32 group_id,  const void *packet, size_t size);
+        int send_to_group(__be32 group_id,  const u_char *packet, size_t size);
+        int send_to_querier(__be32 group_id,  const u_char *packet, size_t size);
 
         void set_ports(vector<Port*> ports);
         string print_ip(int ip);
-        int process_multicast_packet(Port *source_port, const void *buf, size_t size);
-        void multicast(Port *source_port, const void *buf, size_t size);  // Send multicast
+        int process_multicast_packet(Port *source_port, const u_char *packet, size_t size);
+        void multicast(Port *source_port, const u_char *packet, size_t size);  // Send multicast
         void print_table();
 };
 

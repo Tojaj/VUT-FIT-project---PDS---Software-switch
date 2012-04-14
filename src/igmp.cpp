@@ -5,6 +5,7 @@
 #include <linux/ip.h>
 #include <linux/igmp.h>
 #include "igmp.h"
+#include "camtable.h"
 
 
 #define IGMP_PROTOCOL   2
@@ -100,7 +101,7 @@ void IgmpTable::remove_group_member(__be32 group_id, Port *port)
 }
 
 
-int IgmpTable::send_to_group(__be32 group_id,  const void *packet, size_t size)
+int IgmpTable::send_to_group(__be32 group_id,  const u_char *packet, size_t size)
 {
     IgmpRecordTable::iterator it;
     pthread_mutex_lock(&(this->mutex));
@@ -127,7 +128,7 @@ int IgmpTable::send_to_group(__be32 group_id,  const void *packet, size_t size)
 
 
 
-int IgmpTable::send_to_querier(__be32 group_id,  const void *packet, size_t size)
+int IgmpTable::send_to_querier(__be32 group_id,  const u_char *packet, size_t size)
 {
     IgmpRecordTable::iterator it;
     pthread_mutex_lock(&(this->mutex));
@@ -165,7 +166,7 @@ string IgmpTable::print_ip(int ip)
 }
 
 
-int IgmpTable::process_igmp_packet(Port *source_port, const void *packet, size_t size, struct igmphdr *igmp_hdr)
+int IgmpTable::process_igmp_packet(Port *source_port, const u_char *packet, size_t size, struct igmphdr *igmp_hdr)
 {
     // Membership query
     if (igmp_hdr->type == IGMP_HOST_MEMBERSHIP_QUERY) {
@@ -192,7 +193,7 @@ int IgmpTable::process_igmp_packet(Port *source_port, const void *packet, size_t
 
 
 
-int IgmpTable::process_multicast_packet(Port *source_port, const void *packet, size_t size)
+int IgmpTable::process_multicast_packet(Port *source_port, const u_char *packet, size_t size)
 {
     struct ethhdr  *eth_hdr;
     struct iphdr   *ip_hdr;
@@ -209,6 +210,9 @@ int IgmpTable::process_multicast_packet(Port *source_port, const void *packet, s
         // Bad packet
         return MULT_ERR;
     }
+
+    MacAddress dst_mac(eth_hdr->h_dest);
+    printf(">>>> Paket na adresu: %s\n", dst_mac.str().c_str());
 
     if (eth_hdr->h_proto != ETH_P_IP) {
         printf(">>>> Multicast packet ale ne IP (%d)\n", eth_hdr->h_proto);
