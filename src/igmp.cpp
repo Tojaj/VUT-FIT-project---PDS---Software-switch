@@ -162,32 +162,36 @@ string IgmpTable::print_ip(int ip)
     bytes[3] = (ip >> 24) & 0xFF;        
     
     char buffer[16];
-    snprintf(buffer, 16, "%3d.%3d.%3d.%3d", bytes[3], bytes[2], bytes[1], bytes[0]);
+    snprintf(buffer, 16, "%d.%d.%d.%d", bytes[3], bytes[2], bytes[1], bytes[0]);
     return string(buffer);
 }
 
 
 int IgmpTable::process_igmp_packet(Port *source_port, const u_char *packet, size_t size, struct igmphdr *igmp_hdr)
 {
+    printf("IGMP type: %02x (%02x)\n", ntohs(igmp_hdr->type), igmp_hdr->type);
     // Membership query
-    if (igmp_hdr->type == IGMP_HOST_MEMBERSHIP_QUERY) {
-        add_group(igmp_hdr->group, source_port);
+    if (ntohs(igmp_hdr->type) == IGMP_HOST_MEMBERSHIP_QUERY) {
+        printf("Membership query: %s od %s\n", print_ip(ntohs(igmp_hdr->group)).c_str(), source_port->name.c_str());
+        add_group(ntohs(igmp_hdr->group), source_port);
         return MULT_BROADCAST;
     }
 
     // Membership report
-    if (igmp_hdr->type == IGMPV2_HOST_MEMBERSHIP_REPORT || igmp_hdr->type == IGMPV3_HOST_MEMBERSHIP_REPORT) {
-        add_group_member(igmp_hdr->group, source_port);
-        return send_to_querier(igmp_hdr->group, packet, size);
+    if (ntohs(igmp_hdr->type) == IGMPV2_HOST_MEMBERSHIP_REPORT || ntohs(igmp_hdr->type) == IGMPV3_HOST_MEMBERSHIP_REPORT) {
+        printf("Membership report: %s od %s\n", print_ip(ntohs(igmp_hdr->group)).c_str(), source_port->name.c_str());
+        add_group_member(ntohs(igmp_hdr->group), source_port);
+        return send_to_querier(ntohs(igmp_hdr->group), packet, size);
     }
 
     // Membership leave group
-    if (igmp_hdr->type == IGMP_HOST_LEAVE_MESSAGE) {
-        remove_group_member(igmp_hdr->group, source_port);
-        return send_to_querier(igmp_hdr->group, packet, size);
+    if (ntohs(igmp_hdr->type) == IGMP_HOST_LEAVE_MESSAGE) {
+        printf("Membership leave group: %s od %s\n", print_ip(ntohs(igmp_hdr->group)).c_str(), source_port->name.c_str());
+        remove_group_member(ntohs(igmp_hdr->group), source_port);
+        return send_to_querier(ntohs(igmp_hdr->group), packet, size);
     }
     
-    printf("Neznamy typ (%d) IGMP packetu\n", igmp_hdr->type);
+    printf("Neznamy typ (%d) IGMP packetu\n", ntohs(igmp_hdr->type));
     
     return MULT_OK;
 }
@@ -243,7 +247,7 @@ int IgmpTable::process_multicast_packet(Port *source_port, const u_char *packet,
         return MULT_ERR;
     }
 
-    printf(">>>> Multicast packet do %s (velikost: %d)\n", print_ip(ip_hdr->daddr).c_str(), ip_hdr_len);
+    printf(">>>> Multicast packet do %s (velikost: %d)\n", print_ip(ntohs(ip_hdr->daddr)).c_str(), ip_hdr_len);
 
 
     // IGMP packet
@@ -263,12 +267,12 @@ int IgmpTable::process_multicast_packet(Port *source_port, const u_char *packet,
     
     // Datovy packet
     
-    if (ip_hdr->daddr == 0) {
+    if (ntohs(ip_hdr->daddr) == 0) {
         // General query - send to all
         return MULT_BROADCAST;
     }
     
-    return send_to_group(ip_hdr->daddr, packet, size);
+    return send_to_group(ntohs(ip_hdr->daddr), packet, size);
 }
 
 
