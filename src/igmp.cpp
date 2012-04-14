@@ -217,7 +217,7 @@ int IgmpTable::process_multicast_packet(Port *source_port, const u_char *packet,
     size_t ii = 0;
     while (ii < size) {
         for (size_t xx=0; (xx < 16 && ii < size); xx++) {
-            printf("%2x ", packet[ii+xx]);
+            printf("%02x ", packet[ii]);
             ii++;
         }
         printf("\n");
