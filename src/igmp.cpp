@@ -64,7 +64,11 @@ void IgmpTable::add_group_member(__be32 group_id, Port *port)
         return;
     }
     
+    printf("Pridavam clena %s do multicastove skupiny %s neexistuje!\n", port->name.c_str(), print_ip(group_id).c_str());
+    
     ((IgmpRecord) it->second).ports.push_back(port);
+    
+    printf("Delka vektoru portu v teto skupine: %d\n", ((IgmpRecord) it->second).ports.size());
 
     pthread_mutex_unlock(&(this->mutex));
     return;
@@ -285,6 +289,7 @@ void IgmpTable::print_table()
 
     for (it=this->records.begin(); it != this->records.end(); it++) {
         IgmpRecord rec = (IgmpRecord) it->second;
+        printf("Pocet portu ve skupine: %d\n", rec.ports.size());
         printf("%s*%s", print_ip(rec.group_id).c_str(), rec.igmp_querier->name.c_str());
         for (size_t i=0; i < rec.ports.size();) {
             printf(", %s", rec.ports[i]->name.c_str());
