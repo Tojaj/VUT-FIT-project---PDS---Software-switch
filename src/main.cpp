@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <pcap.h>
 #include <string.h>
+#include <unistd.h>
 #include "port.h"
 #include "port_thread.h"
 #include "camtable.h"
@@ -10,12 +11,35 @@
 
 using namespace std;
 
+#define PURGE_INTERVAL     1   // In seconds
+
 /*
 TODO:
-- Mazani CAM
+- Otestovani
+- Odstraneni ladicich vypisu
 */
 
-int main(int argc, char **argv) {
+volatile int should_end = 0;
+
+
+void *cam_cleaner_thread(void *arg)
+{
+    CamTable *camtable = (CamTable *) arg;
+
+    while (1) {
+        if (should_end) {
+            return NULL;
+        }
+        sleep(PURGE_INTERVAL);
+        camtable->purge();
+    }
+    
+    return NULL;
+}
+
+
+
+int main() {
     int ret;
     char errbuf[PCAP_ERRBUF_SIZE];	/* Error string */
    
@@ -78,7 +102,14 @@ int main(int argc, char **argv) {
     }
     igmptable.set_ports(ports);
     camtable.set_ports(ports);
-    printf("HERE\n");
+
+    // Setup cam table cleaner thread
+    pthread_t cam_cleaner;
+    ret = pthread_create(&cam_cleaner, &attr, cam_cleaner_thread, (void *) &camtable);
+    if (ret) {
+        fprintf(stderr, "pthread_create() error: %d\n", ret);
+        return 1;
+    }
 
     // Switch command line interface
     // TODO
@@ -112,18 +143,24 @@ int main(int argc, char **argv) {
 
     // Clean up
 
+    should_end = 1;
+
     // Tell all threads to stop
     for (unsigned int i=0; i < ports.size(); i++) {
         pcap_breakloop(ports[i]->descriptor);
     }
 
     // Join all threads
+    void *result;
     while (!threads.empty()) {
-        void *result;
         if ((ret = pthread_join(*(threads.back()), &result)) != 0) {
             fprintf(stderr, "pthread_join() err %d\n", ret);
         }
         threads.pop_back();
+    }
+
+    if ((ret = pthread_join(cam_cleaner, &result)) != 0) {
+        fprintf(stderr, "pthread_join() err %d\n", ret);
     }
     
     pthread_attr_destroy(&attr);

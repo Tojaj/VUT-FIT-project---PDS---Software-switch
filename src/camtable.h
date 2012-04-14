@@ -7,7 +7,7 @@
 #include <linux/if_ether.h>
 #include "port.h"
 
-#define PURGE_TIMEOUT   60
+#define PURGE_TIMEOUT   60*5  // in seconds
 
 
 using namespace std;
