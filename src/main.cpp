@@ -13,12 +13,6 @@ using namespace std;
 
 #define PURGE_INTERVAL     1   // In seconds
 
-/*
-TODO:
-- Otestovani
-- Odstraneni ladicich vypisu
-*/
-
 volatile int should_end = 0;
 
 
@@ -73,12 +67,24 @@ int main() {
 
     next = all_devices;
     while (next) {
-        if (strncmp(next->name, "eth", 3)) {
-            // Skip non eth devices (any, lo, usbmon[0-9], ...)
-            next = next->next;
-            continue;
-        }
-        printf("Found device: %s\n", next->name);
+		// Check interface (we want ethernet interfaces)
+		char errbuf[PCAP_ERRBUF_SIZE];	/* Error string */
+		pcap_t *descriptor = pcap_open_live(next->name, BUFSIZ, 1, 50, errbuf);
+		if (descriptor) {
+			if (pcap_datalink(descriptor) != DLT_EN10MB) {
+				// Not an ethernet interface
+				pcap_close(descriptor);
+				next = next->next;
+				continue;
+			}
+			pcap_close(descriptor);
+		} else {
+			// Cannot open interface
+			next = next->next;
+			continue;
+		}
+
+		// Create new port object
         Port *port = new Port(next->name);
         PortThreadData *tdata = new PortThreadData;
         ports.push_back(port);
@@ -112,12 +118,11 @@ int main() {
     }
 
     // Switch command line interface
-    // TODO
-    puts("Switch is running");
     while (1) {
         char cmd[31];
         printf("switch> ");
         fflush(stdout);
+
         if (!scanf("%30s", cmd)) {
             continue;
         }
@@ -136,7 +141,7 @@ int main() {
         } else if (!strcmp(cmd, "help")) {
             printf("Supported commands are: quit, cam, stat, igmp, help\n");
         } else {
-            printf("Unknown command \"%s\"\n", cmd);
+            printf("Unknown command \"%s\" (try help)\n", cmd);
         }
     }
     
@@ -175,6 +180,7 @@ int main() {
         thread_data_table.pop_back();
     }
 
+	pcap_freealldevs(all_devices);
 
     return 0;
 }

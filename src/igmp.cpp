@@ -56,20 +56,16 @@ void IgmpTable::add_group_member(__be32 group_id, Port *port)
     IgmpRecordTable::iterator it;
     pthread_mutex_lock(&(this->mutex));
     it = this->records.find(group_id);
-    
+
     if (it == this->records.end()) {
         // Unknown group
-        printf("%s: Multicastova skupina %s neexistuje!\n", __func__, print_ip(group_id).c_str());
         pthread_mutex_unlock(&(this->mutex));
         return;
     }
     
-    printf("Pridavam clena %s do multicastove skupiny %s\n", port->name.c_str(), print_ip(group_id).c_str());
-    
+    // Add multicast group member
     IgmpRecord *irc = (IgmpRecord *) it->second;
     irc->ports.push_back(port);
-    
-    printf("Delka vektoru portu v teto skupine: %d\n", irc->ports.size());
 
     pthread_mutex_unlock(&(this->mutex));
     return;
@@ -87,20 +83,18 @@ void IgmpTable::remove_group_member(__be32 group_id, Port *port)
     
     if (it == this->records.end()) {
         // Unknown group
-        printf("%s: Multicastova skupina %s neexistuje!\n", __func__, print_ip(group_id).c_str());
         pthread_mutex_unlock(&(this->mutex));
         return;
     }
 
+	// Remove group member
     IgmpRecord *irc = (IgmpRecord *) it->second;
     for (unsigned int i=0; i < irc->ports.size(); i++) {
         if (irc->ports[i] == port) {
-            printf("Odebiram port: %s\n", irc->ports[i]->name.c_str());
             irc->ports.erase(irc->ports.begin() + i);
             break;
         }
     }
-    
 
     pthread_mutex_unlock(&(this->mutex));
     return;
@@ -117,15 +111,14 @@ int IgmpTable::send_to_group(__be32 group_id,  const u_char *packet, size_t size
     
     if (it == this->records.end()) {
         // Unknown group
-        printf("Multicastova skupina %s neexistuje!\n", print_ip(group_id).c_str());
         pthread_mutex_unlock(&(this->mutex));
         return MULT_OK;
     }
-    
+
+	// Send packet to goup members
     IgmpRecord *irc = (IgmpRecord *) it->second;
     for (unsigned int i=0; i < irc->ports.size(); i++) {
         irc->ports[i]->send(packet, size);
-        printf("Multicast to: %s\n", irc->ports[i]->name.c_str());
     }
 
     pthread_mutex_unlock(&(this->mutex));
@@ -144,11 +137,11 @@ int IgmpTable::send_to_querier(__be32 group_id,  const u_char *packet, size_t si
     
     if (it == this->records.end()) {
         // Unknown group
-        printf("Multicastova skupina %s neexistuje!\n", print_ip(group_id).c_str());
         pthread_mutex_unlock(&(this->mutex));
         return MULT_BROADCAST;
     }
-    
+
+    // Send to querier
     IgmpRecord *irc = (IgmpRecord *) it->second;
     irc->igmp_querier->send(packet, size);
 
@@ -176,26 +169,26 @@ int IgmpTable::process_igmp_packet(Port *source_port, const u_char *packet, size
 {
     // Membership query
     if (igmp_hdr->type == IGMP_HOST_MEMBERSHIP_QUERY) {
-        printf("Membership query: %s od %s\n", print_ip(ntohl(igmp_hdr->group)).c_str(), source_port->name.c_str());
+//        printf("Membership query: %s od %s\n", print_ip(ntohl(igmp_hdr->group)).c_str(), source_port->name.c_str());
         add_group(ntohl(igmp_hdr->group), source_port);
         return MULT_BROADCAST;
     }
 
     // Membership report
     if (igmp_hdr->type == IGMPV2_HOST_MEMBERSHIP_REPORT || igmp_hdr->type == IGMPV3_HOST_MEMBERSHIP_REPORT) {
-        printf("Membership report: %s od %s\n", print_ip(ntohl(igmp_hdr->group)).c_str(), source_port->name.c_str());
+//        printf("Membership report: %s od %s\n", print_ip(ntohl(igmp_hdr->group)).c_str(), source_port->name.c_str());
         add_group_member(ntohl(igmp_hdr->group), source_port);
         return send_to_querier(ntohl(igmp_hdr->group), packet, size);
     }
 
     // Membership leave group
     if (igmp_hdr->type == IGMP_HOST_LEAVE_MESSAGE) {
-        printf("Membership leave group: %s od %s\n", print_ip(ntohl(igmp_hdr->group)).c_str(), source_port->name.c_str());
+//        printf("Membership leave group: %s od %s\n", print_ip(ntohl(igmp_hdr->group)).c_str(), source_port->name.c_str());
         remove_group_member(ntohl(igmp_hdr->group), source_port);
         return send_to_querier(ntohl(igmp_hdr->group), packet, size);
     }
     
-    printf("Neznamy typ (0x%02x) IGMP packetu\n", igmp_hdr->type);
+//    printf("Neznamy typ (0x%02x) IGMP packetu\n", igmp_hdr->type);
     
     return MULT_OK;
 }
@@ -219,21 +212,9 @@ int IgmpTable::process_multicast_packet(Port *source_port, const u_char *packet,
         // Bad packet
         return MULT_ERR;
     }
-/*
-    MacAddress dst_mac(eth_hdr->h_dest);
-    printf(">>>> Paket na adresu: %s\n", dst_mac.str().c_str());
 
-    size_t ii = 0;
-    while (ii < size) {
-        for (size_t xx=0; (xx < 16 && ii < size); xx++) {
-            printf("%02x ", packet[ii]);
-            ii++;
-        }
-        printf("\n");
-    }
-*/
     if (ntohs(eth_hdr->h_proto) != ETH_P_IP) {
-        printf(">>>> Multicast packet ale ne IP (%d)\n", ntohs(eth_hdr->h_proto));
+		// Multicast packet but not a IP protocol
         return MULT_BROADCAST;
     }
 
@@ -250,9 +231,6 @@ int IgmpTable::process_multicast_packet(Port *source_port, const u_char *packet,
         // Bad packet
         return MULT_ERR;
     }
-
-    printf(">>>> Multicast packet do %s (velikost: %d)\n", print_ip(ntohl(ip_hdr->daddr)).c_str(), ip_hdr_len);
-
 
     // IGMP packet
 
@@ -289,7 +267,6 @@ void IgmpTable::print_table()
 
     for (it=this->records.begin(); it != this->records.end(); it++) {
         IgmpRecord *irc = (IgmpRecord *) it->second;
-        printf("Pocet portu ve skupine: %d\n", irc->ports.size());
         printf("%s*%s", print_ip(irc->group_id).c_str(), irc->igmp_querier->name.c_str());
         for (size_t i=0; i < irc->ports.size();) {
             printf(", %s", irc->ports[i]->name.c_str());

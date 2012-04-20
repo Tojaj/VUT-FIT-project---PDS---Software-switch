@@ -89,13 +89,6 @@ bool MacAddress::operator<(const MacAddress &second) const
 {
     for (int i=0; i < ETH_ALEN; i++) {
         if (this->mac[i] < second.mac[i]) {
-/*            printf("LISI SE: %02x%02x.%02x%02x.%02x%02x | ", this->mac[0], this->mac[1],
-                                                 this->mac[2], this->mac[3],
-                                                 this->mac[4], this->mac[5]);
-            printf("%02x%02x.%02x%02x.%02x%02x\n", second.mac[0], second.mac[1],
-                                                 second.mac[2], second.mac[3],
-                                                 second.mac[4], second.mac[5]);
-*/
             return true;
         }
     }
@@ -104,15 +97,6 @@ bool MacAddress::operator<(const MacAddress &second) const
 }
 
 
-
-/*
-CamRecord::CamRecord()
-{
-    this->mac = NULL;
-    this->port = NULL;
-    this->last_used = time(NULL);
-}
-*/
 
 CamRecord::CamRecord(MacAddress &mac, Port *port)
 {
@@ -165,12 +149,11 @@ int CamTable::update(MacAddress &mac, Port *port)
 
     if (it == this->records.end()) {
         // Unknown source mac address -> Create record
-        printf("Pridavam novy zaznam: %s\n", mac.str().c_str());
         CamRecord *camrecord = new CamRecord(mac, port);
         this->records[mac.str()] = camrecord;
         ret = 1;
     } else {
-        printf("uz existuje: %s\n", mac.str().c_str());
+		// Refresh last_used value
         it->second->refresh();
         ret = 0;
     }
@@ -217,7 +200,6 @@ void CamTable::broadcast(Port *source_port, const void *buf, size_t size)
     for (unsigned int i=0; i < this->ports.size(); i++) {
         if (this->ports[i] != source_port) {
             this->ports[i]->send(buf, size);
-            printf("Broadcast from: %s to: %s\n", source_port->name.c_str(), this->ports[i]->name.c_str());
         }
     }
 }

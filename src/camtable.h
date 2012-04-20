@@ -36,15 +36,12 @@ class CamRecord {
         time_t last_used;
         Port *port;
 
-        //CamRecord();
         CamRecord(MacAddress &mac, Port *port);
         void refresh(); // call refresh of last use time
         int send_via_port(const void *buf, size_t size); // send data
 };
 
 
-//typedef std::map<MacAddress, CamRecord*> RecordTable;
-//typedef std::map<MacAddress, CamRecord*>::iterator RecordTableIterator;
 typedef std::map<string, CamRecord*> RecordTable;
 typedef std::map<string, CamRecord*>::iterator RecordTableIterator;
 
@@ -58,10 +55,10 @@ class CamTable {
         CamTable();
         ~CamTable();
         void set_ports(vector<Port*> ports);
-        int update(MacAddress &mac, Port *port); // if doesn't exist -> add new record if exists -> refresh last_used
-        void purge(); // TODO remove thread
+        int update(MacAddress &mac, Port *port); // if doesn't exist -> add new record; if exists -> refresh last_used value
+        void purge();
         CamRecord *get_record(MacAddress &mac);
-        void broadcast(Port *source_port, const void *buf, size_t size); // send message out via all port except soruce_port
+        void broadcast(Port *source_port, const void *buf, size_t size); // send message out via all port except source_port
         void print_table();
 };
 

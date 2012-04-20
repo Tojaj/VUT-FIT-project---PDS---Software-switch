@@ -16,18 +16,15 @@ void handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packe
     MacAddress src_mac(frame_hdr->h_source);
     MacAddress dest_mac(frame_hdr->h_dest);
     
-    // Update CAM table by source address on the port
-    printf("%s -> %s\n", src_mac.str().c_str(), dest_mac.str().c_str());
+    // Update CAM table (update age of record or add if new) by source address on the port
     tdata->camtable->update(src_mac, tdata->port);
     
     if (dest_mac.is_broadcast()) {
         // Broadcast - Send out via all ports except incoming
-        printf("Broadcast (%s)\n", dest_mac.str().c_str());
         tdata->camtable->broadcast(tdata->port, packet, header->caplen);
 
     } else if (dest_mac.is_multicast()) {
         // Multicast - Send out via right port
-        printf("Multicast (%s)\n", dest_mac.str().c_str());
         if (tdata->igmptable->process_multicast_packet(tdata->port, packet, header->caplen) == MULT_BROADCAST) {
             // Send packet via all interfaces except the incoming interface
             tdata->camtable->broadcast(tdata->port, packet, header->caplen);
@@ -37,14 +34,13 @@ void handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packe
         // Unicast - Send packet out via right port
         CamRecord *rec;
         if ((rec = tdata->camtable->get_record(dest_mac)) != NULL) {
+			// Send to target host
             if (rec->port != tdata->port) {
-                printf("Odesilam spravnym rozhranim\n");
+				//But only if destination and source MAC are different
                 rec->port->send(packet, header->caplen);
-            } else {
-                printf("Nebudu to posilat stejnym rozhranim (%s)!\n", dest_mac.str().c_str());
             }
         } else {
-            printf("Ha, nekdo neznamy (%s), poslu broadcast\n", dest_mac.str().c_str());
+			// Unknown destination MAC
             tdata->camtable->broadcast(tdata->port, packet, header->caplen);
         }
     }
