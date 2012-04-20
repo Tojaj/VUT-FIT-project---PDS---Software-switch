@@ -119,7 +119,7 @@ int IgmpTable::send_to_group(__be32 group_id,  const u_char *packet, size_t size
         // Unknown group
         printf("Multicastova skupina %s neexistuje!\n", print_ip(group_id).c_str());
         pthread_mutex_unlock(&(this->mutex));
-        return MULT_BROADCAST;
+        return MULT_OK;
     }
     
     IgmpRecord *irc = (IgmpRecord *) it->second;
