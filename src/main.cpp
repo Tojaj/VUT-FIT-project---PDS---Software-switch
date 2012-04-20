@@ -67,6 +67,12 @@ int main() {
 
     next = all_devices;
     while (next) {
+		if (next->flags & PCAP_IF_LOOPBACK) {
+			// Interface is loopback
+			next = next->next;
+			continue;
+		}
+		
 		// Check interface (we want ethernet interfaces)
 		char errbuf[PCAP_ERRBUF_SIZE];	/* Error string */
 		pcap_t *descriptor = pcap_open_live(next->name, BUFSIZ, 1, 50, errbuf);
