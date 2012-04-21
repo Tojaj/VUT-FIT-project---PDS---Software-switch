@@ -177,6 +177,7 @@ int IgmpTable::process_igmp_packet(Port *source_port, const u_char *packet, size
     // Membership report
     if (igmp_hdr->type == IGMPV2_HOST_MEMBERSHIP_REPORT || igmp_hdr->type == IGMPV3_HOST_MEMBERSHIP_REPORT) {
 //        printf("Membership report: %s od %s\n", print_ip(ntohl(igmp_hdr->group)).c_str(), source_port->name.c_str());
+        send_to_group(ntohl(igmp_hdr->group), packet, size);
         add_group_member(ntohl(igmp_hdr->group), source_port);
         return send_to_querier(ntohl(igmp_hdr->group), packet, size);
     }
