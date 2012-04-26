@@ -15,17 +15,18 @@ using namespace std;
 
 volatile int should_end = 0;
 
+CamTable *g_camtable = NULL;
+IgmpTable *g_igmptable = NULL;
 
 void *cam_cleaner_thread(void *arg)
 {
-    CamTable *camtable = (CamTable *) arg;
-
     while (1) {
         if (should_end) {
             return NULL;
         }
         sleep(PURGE_INTERVAL);
-        camtable->purge();
+        if (g_camtable) g_camtable->purge();
+        if (g_igmptable) g_igmptable->purge();
     }
     
     return NULL;
@@ -115,9 +116,12 @@ int main() {
     igmptable.set_ports(ports);
     camtable.set_ports(ports);
 
+    g_camtable = &camtable;
+    g_igmptable = &igmptable;
+
     // Setup cam table cleaner thread
     pthread_t cam_cleaner;
-    ret = pthread_create(&cam_cleaner, &attr, cam_cleaner_thread, (void *) &camtable);
+    ret = pthread_create(&cam_cleaner, &attr, cam_cleaner_thread, (void *) NULL);
     if (ret) {
         fprintf(stderr, "pthread_create() error: %d\n", ret);
         return 1;

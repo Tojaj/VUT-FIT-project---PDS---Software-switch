@@ -9,6 +9,8 @@
 
 using namespace std;
 
+#define IGMP_PORT_TIMEOUT 30
+
 #define MULT_OK         0
 #define MULT_BROADCAST  1
 #define MULT_ERR        2
