@@ -1,6 +1,7 @@
 #ifndef __SWITCH_IGMP_H__
 #define __SWITCH_IGMP_H__
 
+#include <ctime>
 #include <map>
 #include <vector>
 #include <linux/ip.h>
@@ -17,6 +18,7 @@ class IgmpRecord {
         __be32 group_id;
         Port *igmp_querier;
         vector<Port*> ports;
+        vector<time_t> last_used_vector; // time of last membership query for port on same index in ports
 };
 
 
@@ -45,6 +47,7 @@ class IgmpTable {
         int process_multicast_packet(Port *source_port, const u_char *packet, size_t size);
         void multicast(Port *source_port, const u_char *packet, size_t size);  // Send multicast
         void print_table();
+        void purge();
 };
 
 #endif /* __SWITCH_IGMP_H__ */

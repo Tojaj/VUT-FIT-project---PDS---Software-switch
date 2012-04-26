@@ -63,9 +63,22 @@ void IgmpTable::add_group_member(__be32 group_id, Port *port)
         return;
     }
     
-    // Add multicast group member
+    // Add multicast group member or refres if exists
+    
+    bool found = false;
     IgmpRecord *irc = (IgmpRecord *) it->second;
-    irc->ports.push_back(port);
+    for (unsigned int i=0; i < irc->ports.size(); i++) {
+        if (irc->ports[i] == port) {
+            irc->last_used_vector[i] = time(NULL);
+            found = true;
+            break;
+        }
+    }
+    
+    if (!found) {
+        irc->ports.push_back(port);
+        irc->last_used_vector.push_back(time(NULL));
+    }
 
     pthread_mutex_unlock(&(this->mutex));
     return;
@@ -92,6 +105,7 @@ void IgmpTable::remove_group_member(__be32 group_id, Port *port)
     for (unsigned int i=0; i < irc->ports.size(); i++) {
         if (irc->ports[i] == port) {
             irc->ports.erase(irc->ports.begin() + i);
+            irc->last_used_vector.erase(irc->last_used_vector.begin() + i);
             break;
         }
     }
@@ -138,7 +152,7 @@ int IgmpTable::send_to_querier(__be32 group_id,  const u_char *packet, size_t si
     if (it == this->records.end()) {
         // Unknown group
         pthread_mutex_unlock(&(this->mutex));
-        return MULT_BROADCAST;
+        return MULT_OK;
     }
 
     // Send to querier
@@ -170,14 +184,19 @@ int IgmpTable::process_igmp_packet(Port *source_port, const u_char *packet, size
     // Membership query
     if (igmp_hdr->type == IGMP_HOST_MEMBERSHIP_QUERY) {
 //        printf("Membership query: %s od %s\n", print_ip(ntohl(igmp_hdr->group)).c_str(), source_port->name.c_str());
-        add_group(ntohl(igmp_hdr->group), source_port);
-        return MULT_BROADCAST;
+        if (ntohl(igmp_hdr->group) != 0) {
+            // Group specific query
+            add_group(ntohl(igmp_hdr->group), source_port);
+            return MULT_BROADCAST;
+        } else {
+            // General query
+            return send_to_group(ntohl(igmp_hdr->group), packet, size);
+        }
     }
 
     // Membership report
     if (igmp_hdr->type == IGMPV2_HOST_MEMBERSHIP_REPORT || igmp_hdr->type == IGMPV3_HOST_MEMBERSHIP_REPORT) {
 //        printf("Membership report: %s od %s\n", print_ip(ntohl(igmp_hdr->group)).c_str(), source_port->name.c_str());
-        send_to_group(ntohl(igmp_hdr->group), packet, size);
         add_group_member(ntohl(igmp_hdr->group), source_port);
         return send_to_querier(ntohl(igmp_hdr->group), packet, size);
     }
@@ -268,9 +287,10 @@ void IgmpTable::print_table()
 
     for (it=this->records.begin(); it != this->records.end(); it++) {
         IgmpRecord *irc = (IgmpRecord *) it->second;
-        printf("%s*%s", print_ip(irc->group_id).c_str(), irc->igmp_querier->name.c_str());
+        printf("%s\t*%s", print_ip(irc->group_id).c_str(), irc->igmp_querier->name.c_str());
         for (size_t i=0; i < irc->ports.size();) {
-            printf(", %s", irc->ports[i]->name.c_str());
+            //printf(", %s", irc->ports[i]->name.c_str());
+            printf(", %s(%ld)", irc->ports[i]->name.c_str(), (time(NULL) - irc->last_used_vector[i]));
             i++;
         }
         printf("\n");
