@@ -376,9 +376,9 @@ void IgmpTable::print_table()
 void IgmpTable::purge()
 {
     IgmpRecordTable::iterator it;
-
+    puts("JDU LOCKNOUT");
     pthread_mutex_lock(&(this->mutex));
-
+    puts("LOKNUTO");
     for (it=this->records.begin(); it != this->records.end(); it++) {
         IgmpRecord *irc = (IgmpRecord *) it->second;
         printf("PURGUJI IGMP %s\n", irc->igmp_querier->name.c_str()); // puts
