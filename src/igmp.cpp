@@ -381,15 +381,18 @@ void IgmpTable::purge()
 
     for (it=this->records.begin(); it != this->records.end(); it++) {
         IgmpRecord *irc = (IgmpRecord *) it->second;
-        
+        printf("PURGUJI IGMP %s\n", irc->igmp_querier->name.c_str()); // puts
         vector<Port*>::iterator it_p;
         vector<time_t>::iterator it_t;
         
         time_t cur_time = time(NULL);   
         it_p = irc->ports.begin();
         it_t = irc->last_used_vector.begin();
+        printf("Cas %ld\n", cur_time);
         while (it_t != irc->last_used_vector.end()) {
+            puts("iterace");
             if ((cur_time - (*it_t)) > PURGE_TIMEOUT) {
+                puts("MAZU");
                 irc->ports.erase(it_p);
                 irc->last_used_vector.erase(it_t);
             } else {
