@@ -29,7 +29,6 @@ void *cam_cleaner_thread(void *arg)
             g_camtable->purge();
         }
         if (g_igmptable) {
-            puts("Mam IGMP tabulku a jdu volat purge");
             g_igmptable->purge();
         }
     }

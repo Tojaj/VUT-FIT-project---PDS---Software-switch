@@ -375,28 +375,24 @@ void IgmpTable::print_table()
 
 void IgmpTable::purge()
 {
-    puts("JDU LOCKNOUT");
-    fflush(stdout);
     IgmpRecordTable::iterator it;
     pthread_mutex_lock(&(this->mutex));
-    puts("LOKNUTO");
-    fflush(stdout);
     for (it=this->records.begin(); it != this->records.end(); it++) {
         IgmpRecord *irc = (IgmpRecord *) it->second;
-        printf("PURGUJI IGMP %s\n", irc->igmp_querier->name.c_str()); // puts
         vector<Port*>::iterator it_p;
         vector<time_t>::iterator it_t;
+        puts("purge");
         
         time_t cur_time = time(NULL);   
         it_p = irc->ports.begin();
         it_t = irc->last_used_vector.begin();
-        printf("Cas %ld\n", cur_time);
+
         while (it_t != irc->last_used_vector.end()) {
-            puts("iterace");
+            fflush(stdout);
             if ((cur_time - (*it_t)) > PURGE_TIMEOUT) {
                 puts("MAZU");
-                irc->ports.erase(it_p);
-                irc->last_used_vector.erase(it_t);
+                it_p = irc->ports.erase(it_p);
+                it_t = irc->last_used_vector.erase(it_t);
             } else {
                 ++it_p;
                 ++it_t;
