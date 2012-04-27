@@ -389,9 +389,9 @@ void IgmpTable::purge()
 
         while (it_t != irc->last_used_vector.end()) {
             time_t port_time = cur_time - (*it_t);
-            printf("Port time: %ld (TIMEOUT: %ld)\n", port_time, PURGE_TIMEOUT);
+            printf("Port time: %ld (TIMEOUT: %ld)\n", port_time, IGMP_PORT_TIMEOUT);
             fflush(stdout);
-            if (port_time > PURGE_TIMEOUT) {
+            if (port_time > IGMP_PORT_TIMEOUT) {
                 puts("MAZU");
                 it_p = irc->ports.erase(it_p);
                 it_t = irc->last_used_vector.erase(it_t);
