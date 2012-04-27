@@ -38,7 +38,6 @@ void IgmpTable::add_group(__be32 group_id)
 
     pthread_mutex_lock(&(this->mutex));
     if(!this->records.count(group_id)) {
-        puts("Pridavam novou skupinu bez queriera");
         IgmpRecord *irc = new IgmpRecord;
         irc->group_id = group_id;
         irc->igmp_querier = NULL;
@@ -61,14 +60,12 @@ void IgmpTable::add_or_update_group(__be32 group_id, Port *port)
 
     if(it == this->records.end()) {
         // Group doesn't exists yet
-        puts("Pridavam novou skupinu s querierem");
         IgmpRecord *irc = new IgmpRecord;
         irc->group_id = group_id;
         irc->igmp_querier = port;
         this->records[group_id] = irc;
     } else {
         // Group already exists - update querier
-        puts("Pridavam queriera do skupiny");
         IgmpRecord *irc = (IgmpRecord *) it->second;
         irc->igmp_querier = port;
     }
@@ -98,7 +95,6 @@ void IgmpTable::add_group_member(__be32 group_id, Port *port)
     IgmpRecord *irc = (IgmpRecord *) it->second;
     for (unsigned int i=0; i < irc->ports.size(); i++) {
         if (irc->ports[i] == port) {
-            puts("Aktualizuji cas existujiciho clena");
             irc->last_used_vector[i] = time(NULL);
             found = true;
             break;
@@ -106,7 +102,6 @@ void IgmpTable::add_group_member(__be32 group_id, Port *port)
     }
     
     if (!found) {
-        puts("Pridavam noveho clena do skupiny");
         irc->ports.push_back(port);
         irc->last_used_vector.push_back(time(NULL));
     }
@@ -127,7 +122,6 @@ void IgmpTable::add_querier(Port *port)
     
     if (!found) {
         // Add new querier
-        puts("Pridavam noveho queriera do globalniho seznamu");
         this->queriers.push_back(port);
     }
 }
@@ -190,7 +184,6 @@ int IgmpTable::send_to_group(__be32 group_id,  const u_char *packet, size_t size
 
 void IgmpTable::send_to_all_queriers(const u_char *packet, size_t size)
 {
-    puts("Zasilam vsem querierum");
     for (size_t i=0; i < this->queriers.size(); i++) {
         this->queriers[i]->send(packet, size);
     }
@@ -215,7 +208,6 @@ int IgmpTable::send_to_querier(__be32 group_id,  const u_char *packet, size_t si
     // Send to querier
     IgmpRecord *irc = (IgmpRecord *) it->second;
     if (irc->igmp_querier != NULL) {
-        puts("Zasilam specifickemu querierovi");
         irc->igmp_querier->send(packet, size);
     } else {
         // Querier is unknown for now
@@ -247,22 +239,18 @@ int IgmpTable::process_igmp_packet(Port *source_port, const u_char *packet, size
     // Membership query
     if (igmp_hdr->type == IGMP_HOST_MEMBERSHIP_QUERY) {
         add_querier(source_port);
-//        printf("Membership query: %s od %s\n", print_ip(ntohl(igmp_hdr->group)).c_str(), source_port->name.c_str());
         if (ntohl(igmp_hdr->group) != 0) {
             // Group specific query
-            puts("Posilam group specific query");
             add_or_update_group(ntohl(igmp_hdr->group), source_port);
             return send_to_group(ntohl(igmp_hdr->group), packet, size);
         } else {
             // General query
-            puts("Posilam general query");
             return MULT_BROADCAST;
         }
     }
 
     // Membership report
     if (igmp_hdr->type == IGMPV2_HOST_MEMBERSHIP_REPORT || igmp_hdr->type == IGMPV3_HOST_MEMBERSHIP_REPORT) {
-//        printf("Membership report: %s od %s\n", print_ip(ntohl(igmp_hdr->group)).c_str(), source_port->name.c_str());
         add_group(ntohl(igmp_hdr->group)); // Create group if doesn't exists
         add_group_member(ntohl(igmp_hdr->group), source_port);
         return send_to_querier(ntohl(igmp_hdr->group), packet, size);
@@ -270,7 +258,6 @@ int IgmpTable::process_igmp_packet(Port *source_port, const u_char *packet, size
 
     // Membership leave group
     if (igmp_hdr->type == IGMP_HOST_LEAVE_MESSAGE) {
-//        printf("Membership leave group: %s od %s\n", print_ip(ntohl(igmp_hdr->group)).c_str(), source_port->name.c_str());
         remove_group_member(ntohl(igmp_hdr->group), source_port);
         return send_to_querier(ntohl(igmp_hdr->group), packet, size);
     }
@@ -359,8 +346,7 @@ void IgmpTable::print_table()
             printf("*%s, ", irc->igmp_querier->name.c_str());
         }
         for (size_t i=0; i < irc->ports.size();) {
-            //printf(", %s", irc->ports[i]->name.c_str());
-            printf("%s(%ld)", irc->ports[i]->name.c_str(), (time(NULL) - irc->last_used_vector[i]));
+            printf("%s", irc->ports[i]->name.c_str());
             i++;
             if (i < irc->ports.size()) {
                 printf(", ");
@@ -381,7 +367,6 @@ void IgmpTable::purge()
         IgmpRecord *irc = (IgmpRecord *) it->second;
         vector<Port*>::iterator it_p;
         vector<time_t>::iterator it_t;
-        puts("purge");
         
         time_t cur_time = time(NULL);   
         it_p = irc->ports.begin();
@@ -389,10 +374,7 @@ void IgmpTable::purge()
 
         while (it_t != irc->last_used_vector.end()) {
             time_t port_time = cur_time - (*it_t);
-            printf("Port time: %ld (TIMEOUT: %ld)\n", port_time, IGMP_PORT_TIMEOUT);
-            fflush(stdout);
             if (port_time > IGMP_PORT_TIMEOUT) {
-                puts("MAZU");
                 it_p = irc->ports.erase(it_p);
                 it_t = irc->last_used_vector.erase(it_t);
             } else {
